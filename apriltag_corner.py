@@ -45,8 +45,10 @@ def family_name(tag):
         return "TAG36H11"
     if(tag.family() == image.ARTOOLKIT):
         return "ARTOOLKIT"
+
 while(True):
     clock.tick()
+
     img = sensor.snapshot()
     for tag in img.find_apriltags(): # defaults to TAG36H11 without "families".
         img.draw_rectangle(tag.rect(), color = (255, 0, 0))
@@ -59,17 +61,32 @@ while(True):
         pt3y = tag.corners()[2][1]
         pt4x = tag.corners()[3][0]# x top left
         pt4y = tag.corners()[3][1]
-        sdf = tag.mp_PI()
-        sdg = tag.tst1()
+
+        desPt1x = tag.desired_pts()[0]# x top left
+        desPt1y = tag.desired_pts()[1]
+        desPt2x = tag.desired_pts()[2]# x top left
+        desPt2y = tag.desired_pts()[3]
+        desPt3x = tag.desired_pts()[4]# x top left
+        desPt3y = tag.desired_pts()[5]
+        desPt4x = tag.desired_pts()[6]# x top left
+        desPt4y = tag.desired_pts()[7]
+
+        img.draw_circle(int(desPt1x),int(desPt1y),2,color=(255,50,50))
+        img.draw_circle(int(desPt2x),int(desPt2y),2,color=(255,50,50))
+        img.draw_circle(int(desPt3x),int(desPt3y),2,color=(255,50,50))
+        img.draw_circle(int(desPt4x),int(desPt4y),2,color=(255,50,50))
+       # tag.desired_pts[0] = 1000
 
         img.draw_line([pt1x, pt1y, pt2x, pt2y],color = (0,0,255))
         img.draw_line([pt2x, pt2y, pt3x, pt3y],color = (0,0,255))
         img.draw_line([pt3x, pt3y, pt4x, pt4y],color = (0,0,255))
         img.draw_line([pt4x, pt4y, pt1x, pt1y],color = (0,0,255))
+        print_args1 = (pt1x,pt1y,pt2x,pt2y,pt3x,pt3y,pt4x,pt4y)
+    #    print("corners_py: %d %d %d %d %d %d %d %d" % print_args1)
 
 
 
  #       img.draw_rectangle(rectangle(pt1x,pt1y,pt2x,pt2y,pt3x,pt3y,pt4x,pt4y),color = (0,0,255))
         print_args = (family_name(tag), tag.id(), (180 * tag.rotation()) / math.pi)
      #   print("Tag Family %s, Tag ID %d, rotation %f (degrees)" % print_args)
-print(clock.fps())
+        print("framerate: %f" % clock.fps())

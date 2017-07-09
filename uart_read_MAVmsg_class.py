@@ -44,7 +44,7 @@ class MavReceiver:
     def decode(self):
         for i in range(len(self.buf)):
             print(self.buf[i])
-        # MEAT OF THE FCT SHOULD GO HERE
+        # MEAT Ox   F THE FCT SHOULD GO HERE
 
     def publish(self):
         self.uart.write("HloWrld!")
