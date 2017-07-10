@@ -4,7 +4,8 @@ from ubinascii import hexlify
 
 class MavReceiver:
     def __init__(self,expectedlength=15, stchar = b'10', enchar = b'102'):
-        self.uart = UART(3, 19200)
+        self.uart = UART(3, 57600)
+        self.uart.init(57600, bits=8, parity=None, stop=1,timeout=1000, flow=0, timeout_char=0, read_buf_len=64)
         self.startbyte = stchar
         self.endbyte = enchar
         self.xlength = expectedlength
