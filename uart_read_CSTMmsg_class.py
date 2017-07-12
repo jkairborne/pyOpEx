@@ -18,8 +18,8 @@ class RPReceiver:
 
     def readbuf(self):
         self.numbytes = self.uart.readinto(self.buf)
-  #      for i in range(self.numbytes,0,-1):
-  #          print(self.buf[i]),
+        for i in range(self.numbytes,0,-1):
+            print(self.buf[i]),
 
     def sync(self):
         self.readbuf()
@@ -36,13 +36,40 @@ class RPReceiver:
         print(self.endbyte)
 
     def decode(self,bkmk):
-        for i in range(bkmk,(bkmk+self.xlength)):
-            print("byte %d: " % bkmk)
+        res = checksum(self.buf,bkmk,10)
+        print("value for all 10 is: %d" % res)
+
+def verify_checksum(data,length):
+    sum = 0
+    for i in range(0,length):
+        sum+=data[i]
+    sum = sum & 0xFF
+    if (sum == 0xFF):
+        return True
+    else:
+        return False
 
 
 if __name__=="__main__":
     print("at the start")
     rec = RPReceiver()
+    arr = [65,66,67,68,69,70,71,72,73,80, 66]
+    print("arr: ")
+    for i in range(0,len(arr)):
+        print(arr[i])
+    res = verify_checksum(arr,11)
+    print(res)
+    arr = [65,66,67,68,69,70,71,35]
+    print("arr2: ")
+    res = verify_checksum(arr,8)
+    print(res)
+
+    arr = [65,66,67,68,69,176]
+    print("arr3: ")
+    res = verify_checksum(arr,6)
+    print(res)
+
+
     while(True):
         rec.sync()
         time.sleep(1000)
@@ -58,5 +85,4 @@ if __name__=="__main__":
         time.sleep(1000)
         rec.sync()
         time.sleep(1000)
-
 
