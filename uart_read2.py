@@ -15,6 +15,7 @@ sensor.set_auto_gain(False)
 sensor.set_auto_whitebal(False)
 
 uart = pyb.UART(3, uart_baudrate, timeout_char = 1000)
+uart.init(57600,bits=8,parity=None,stop=1,timeout=1000,timeout_char=0,read_buf_len=512)
 
 def available():
     return uart.any()
@@ -32,29 +33,21 @@ FSM_STATE_ZERO = 1
 FSM_STATE_ACTION1 = 2
 FSM_STATE_ACTION2 = 3
 
+def read_message(msg)
+    if(check_chksum()):
+        unpack("ii",msg[0:7])
+    else:
+
+
 def parse_byte(byte):
-    global fsm_state
-    global last_byte
+    if (byte == 0xFE):
+        print("byte 0xFE")
 
-    if fsm_state == FSM_STATE_NONE:
-        if byte == 0x00:
-            fsm_state = FSM_STATE_ZERO
-            print("byte was 0x00")
-        else:
-            fsm_state = FSM_STATE_NONE
-            print("byte was not %d" % byte)
+    elif (byte == 0xFF):
+        print("byte 0xff")
+    else:
+        print("not one\n")
 
-    elif fsm_state == FSM_STATE_ZERO:
-        if byte == 0xFF:
-            fsm_state = FSM_STATE_ACTION1
-            print("byte was 0xFF")
-            fsm_state = FSM_STATE_NONE
-        elif byte == 0xFE:
-            fsm_state = FSM_STATE_ACTION2
-            print("byte was 0xFE")
-            fsm_state = FSM_STATE_NONE
-        else:
-            fsm_state = FSM_STATE_NONE
 
 # Main Loop
 
