@@ -19,22 +19,34 @@ class RPReceiver:
 
     def readbuf(self):
         self.numbytes = self.uart.readinto(self.buf)
+        if(self.numbytes == None):
+            print("ERROR: No data incoming on UART")
+            self.numbytes =0
         print("list of all the bytes received: ")
         for i in range(self.numbytes,0,-1):
             print(self.buf[i]),
+
+    def checkmsg(self,i):
+        if (self.buf[i] == self.startbyte):
+            #if (i<15 or i>25) == True: REENABLE TO CHECK "CORRUPTED" DATA OR "BAD" DATA
+            #    self.buf[i+1] = 100
+    # Potential message should not contain the header (hence the i+1). It should include checksum (hence the 5).
+            self.potmsg = self.buf[i+1:i+self.xlength]
+            if (verify_checksum(self.potmsg)):
+                return True
+            else:
+                return False
 
     def sync(self):
         self.readbuf()
 #        print("sync called, # of bytes is %d" % self.numbytes)
         for i in range((self.numbytes-self.xlength),0,-1): # This maybe needs to go to -1?
-            if (self.buf[i] == self.startbyte):
-            # Potential message should not contain the header (hence the i+1). It should include checksum (hence the 5).
-                self.potmsg = self.buf[i+1:i+self.xlength]
-                verify_checksum(self.potmsg,10)
+            print("i = %d" % i)
+            if self.checkmsg(i):
                 self.decode(i)
-                return (1)
-        print("didn't find the message")
-        return (0)
+                return 1
+        print("ERROR: didn't find the message")
+        return 0
 
     def decode(self,bkmk):
         print("in decode")
@@ -43,16 +55,15 @@ class RPReceiver:
         #pitch = arr[1]
        # print("roll and pitch data: \t %d \t %d" % roll, pitch)
 
-def verify_checksum(data,length):
+    def corrupt(self):
+        self.potmsg[1] = 100
+        print("corrupting data, %c" % self.potmsg[1])
+
+def verify_checksum(data):
     sum = 0
-    print("in verify checksum: ")
-    '''
-    for i in range(0,len(data)):
-        print(data[i])
-        '''
+    print("in verify checksum")
     for i in range(0,len(data)):
         sum+=data[i]
-        print(data[i])
     sum = sum & 0xFF
     if (sum == 0xFF):
         print("checksum passed!")
