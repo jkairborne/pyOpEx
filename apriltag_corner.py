@@ -77,6 +77,17 @@ while(True):
         img.draw_circle(int(desPt4x),int(desPt4y),2,color=(255,50,50))
        # tag.desired_pts[0] = 1000
 
+        roll = 21
+        pitch = -22
+#        cPts = [10,20,-10,20,10,-20,-10,-20]
+
+        cPts = [15,25,-5,25,15,-15,-5,-15]
+        dPts = [10,20,-10,20,10,-20,-10,-20]
+
+        tag.ibvs_calc(roll,pitch,cPts,dPts)
+
+
+
         img.draw_line([pt1x, pt1y, pt2x, pt2y],color = (0,0,255))
         img.draw_line([pt2x, pt2y, pt3x, pt3y],color = (0,0,255))
         img.draw_line([pt3x, pt3y, pt4x, pt4y],color = (0,0,255))

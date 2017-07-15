@@ -50,10 +50,14 @@ class RPReceiver:
 
     def decode(self,bkmk):
         print("in decode")
-       # arr = ustruct.unpack_from('hhc',self.potmsg)
-       # roll = arr[0]
-        #pitch = arr[1]
-       # print("roll and pitch data: \t %d \t %d" % roll, pitch)
+        for i in range(0,4):
+            print(self.potmsg[i])
+        arr = ustruct.unpack_from('hhc',self.potmsg)
+        roll = arr[0]
+        pitch = arr[1]
+        print("roll and pitch data: ")
+        print(roll)
+        print(pitch)
 
     def corrupt(self):
         self.potmsg[1] = 100
@@ -67,7 +71,6 @@ def verify_checksum(data):
     sum = sum & 0xFF
     if (sum == 0xFF):
         print("checksum passed!")
-        print(data[2])
         return True
     else:
         print("checksum failed!")
