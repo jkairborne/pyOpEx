@@ -1,0 +1,4 @@
+Quick question. Is there a way to clear the UART buffer?
+I was trying to write data received on my UART to an mjpeg video (trying to see what kind of latency I can expect). Problem was as soon as I tried to read from the UART buffer, the OpenMV IDE would just stop working, it never finished recording the video. Plus the frame rate was awful (at most 1 fps). After a few hours (trying to figure out a minimum working example of this failure to post here) I solved the problem by increasing the size of my receiving bytearray for UART data from 300 to 10000.  My system is receiving 200 bytes per second, so that leaves me 50s of buffer room.
+I guess having the buffer that big won't really affect much? It just seems a bit excessive and I'm worried it could still fill and cause the same problem at some point. Anything you can think of to solve this?
+So far my blundering around trying to deal with UART data has led to many, many IDE crashes on my end.
