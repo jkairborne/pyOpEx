@@ -14,7 +14,8 @@ sensor.set_auto_whitebal(False)  # must turn this off to prevent image washout..
 clock = time.clock()
 
 # Note! Unlike find_qrcodes the find_apriltags method does not need lens correction on the image to work.
-
+c_x = 80
+c_y = 60
 # The apriltag code supports up to 6 tag families which can be processed at the same time.
 # Returned tag objects will have their tag family and id within the tag family.
 
@@ -62,31 +63,20 @@ while(True):
         pt4x = tag.corners()[3][0]# x top left
         pt4y = tag.corners()[3][1]
 
-        desPt1x = tag.desired_pts()[0]# x top left
-        desPt1y = tag.desired_pts()[1]
-        desPt2x = tag.desired_pts()[2]# x top left
-        desPt2y = tag.desired_pts()[3]
-        desPt3x = tag.desired_pts()[4]# x top left
-        desPt3y = tag.desired_pts()[5]
-        desPt4x = tag.desired_pts()[6]# x top left
-        desPt4y = tag.desired_pts()[7]
-
-        img.draw_circle(int(desPt1x),int(desPt1y),2,color=(255,50,50))
-        img.draw_circle(int(desPt2x),int(desPt2y),2,color=(255,50,50))
-        img.draw_circle(int(desPt3x),int(desPt3y),2,color=(255,50,50))
-        img.draw_circle(int(desPt4x),int(desPt4y),2,color=(255,50,50))
-       # tag.desired_pts[0] = 1000
 
         roll = 21
         pitch = -22
 #        cPts = [10,20,-10,20,10,-20,-10,-20]
+#        cPts = [15,25,-5,25,15,-15,-5,-15]
+        dPts = [120,20,-10,20,10,-20,-10,-20]
+        cPts = [pt1x,pt1y,pt2x,pt2y,pt3x,pt3y,pt4x,pt4y]
 
-        cPts = [15,25,-5,25,15,-15,-5,-15]
-        dPts = [10,20,-10,20,10,-20,-10,-20]
+        img.draw_circle(dPts[0],dPts[1],2,color=(255,50,50))
+       # img.draw_circle(dPts[2],dPts[3],2,color=(255,50,50))
+       # img.draw_circle(dPts[4],dPts[5],2,color=(255,50,50))
+      #  img.draw_circle(dPts[6],dPts[7],2,color=(255,50,50))
 
         tag.ibvs_calc(roll,pitch,cPts,dPts)
-
-
 
         img.draw_line([pt1x, pt1y, pt2x, pt2y],color = (0,0,255))
         img.draw_line([pt2x, pt2y, pt3x, pt3y],color = (0,0,255))
