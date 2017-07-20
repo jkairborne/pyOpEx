@@ -7,8 +7,9 @@
 
 import image, math, pyb, sensor, struct, time
 
-# Parameters #################################################################
 
+# Parameters #################################################################
+M_PI = 3.14159265358979323846
 uart_baudrate = 921600
 
 MAV_system_id = 1
@@ -50,6 +51,20 @@ c_y = y_res / 2
 h_fov = 2 * math.atan((sensor_w_mm / 2) / lens_mm)
 v_fov = 2 * math.atan((sensor_h_mm / 2) / lens_mm)
 
+def rp_to_quat(roll, pitch):
+    q=[0,0,0,0]
+    q[0] = math.cos(roll/2)*math.cos(pitch/2)
+    q[1] = math.sin(roll/2)*math.cos(pitch/2)
+    q[2] = math.cos(roll/2)*math.sin(pitch/2)
+    q[3] =-math.sin(roll/2)*math.sin(pitch/2)
+    return q
+
+def to_rad(in_deg):
+    return (in_deg*M_PI/180)
+
+def to_deg(in_rad):
+    return (in_rad*180/M_PI)
+
 def z_to_mm(z_translation, tag_size): # z_translation is in decimeters...
     return (((z_translation * 100) * tag_size) / 165) - lens_to_camera_mm
 
@@ -75,22 +90,24 @@ def checksum(data, extra): # https://github.com/mavlink/c_library_v1/blob/master
 MAV_target_component_id = 1
 MAV_SET_ATTITUDE_TARGET_extra_crc = 49
 MAV_SET_ATTITUDE_TARGET_message_id = 82
+MAV_SET_ATTITUDE_TARGET_mask =0x00
 # http://mavlink.org/messages/common#DISTANCE_SENSOR
 # https://github.com/mavlink/c_library_v1/blob/master/common/mavlink_msg_distance_sensor.h
-def send_set_attitude_target_packet(thrust):
+def send_set_attitude_target_packet(thrust,quat):
     global packet_sequence
     temp = struct.pack('<I4fffffBBB',
                        1,
-                       0,
-                       0,
-                       0,
+                       quat[0],
+                       quat[1],
+                       quat[2],
+                       quat[3],
                        0,
                        0,
                        0,
                        thrust,
                        MAV_system_id,
                        MAV_target_component_id,
-                       0)
+                       MAV_SET_ATTITUDE_TARGET_mask)
     temp = struct.pack("<bbbbb39s",
                        39,
                        packet_sequence & 0xFF,
@@ -106,6 +123,42 @@ def send_set_attitude_target_packet(thrust):
     uart.write(temp)
 
 
+MAV_SET_POSITION_TARGET_LOCAL_NED_extra_crc = 143
+MAV_SET_POSITION_TARGET_LOCAL_NED_message_id = 84
+POSITION_Type_mask = 0
+def send_set_position_target_local_ned_packet(x,y,z,yaw):
+    global packet_sequence
+    temp = struct.pack('<IfffffffffffHBBB',
+                       0,
+                       x,
+                       y,
+                       z,
+                       0,
+                       0,
+                       0,
+                       0,
+                       0,
+                       0,
+                       yaw,
+                       0,
+                       POSITION_Type_mask,
+                       MAV_system_id,
+                       MAV_target_component_id,
+                       8)
+    temp = struct.pack("<bbbbb53s",
+                       53,
+                       packet_sequence & 0xFF,
+                       MAV_system_id,
+                       MAV_component_id,
+                       MAV_SET_POSITION_TARGET_LOCAL_NED_message_id,
+                       temp)
+    temp = struct.pack("<b58sh",
+                       0xFE,
+                       temp,
+                       checksum(temp, MAV_SET_POSITION_TARGET_LOCAL_NED_extra_crc))
+    packet_sequence += 1
+    uart.write(temp)
+
 # Main Loop
 count = 0
 clock = time.clock()
@@ -114,8 +167,32 @@ while(True):
     img = sensor.snapshot()
     tags = sorted(img.find_apriltags(fx=f_x, fy=f_y, cx=c_x, cy=c_y), key = lambda x: x.w() * x.h(), reverse = True)
     time.sleep(100)
-    thrust = math.cos(count/30)/3+0.5
-    send_set_attitude_target_packet(thrust)
-    print(thrust)
+    thrust = 0.382
+
+    if(count%200 == 0):
+        i=0
+    despitch = 0
+    if i<20:
+        desroll = i/2
+    if (i<60 and i>=20):
+        desroll = 10-(i-20)/2
+    if (i<80 and i>=60):
+        desroll = -10+(i-60)/2
+    if (i<100 and i>=80):
+        desroll = 0
+        despitch = (i-80)/2
+    if (i<140 and i>=100):
+        despitch = 10-(i-100)/2
+    if (i<160 and i>=140):
+        despitch = -10+(i-140)/2
+    if (i>160):
+        desroll = 0
+        despitch = 0
+    quatern = rp_to_quat(to_rad(desroll),to_rad(despitch))
+    send_set_attitude_target_packet(thrust,quatern)
+    #print("des roll, pitch: %.2f %.2f" % (desroll,despitch))
+    #print(quatern)
+   # print("FPS %f" % clock.fps())
     count +=1
+    i+=1
 
