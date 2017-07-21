@@ -3,7 +3,6 @@ import ustruct
 from pyb import UART
 from ubinascii import hexlify
 
-
 import sensor, image, time, mjpeg, pyb
 
 baudrate = 921600

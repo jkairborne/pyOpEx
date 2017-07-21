@@ -6,7 +6,7 @@
 # P4 = TXD
 
 import image, math, pyb, sensor, struct, time
-
+import test
 
 # Parameters #################################################################
 M_PI = 3.14159265358979323846
@@ -51,12 +51,12 @@ c_y = y_res / 2
 h_fov = 2 * math.atan((sensor_w_mm / 2) / lens_mm)
 v_fov = 2 * math.atan((sensor_h_mm / 2) / lens_mm)
 
-def rp_to_quat(roll, pitch):
+def rpy_to_quat(roll, pitch,yaw):
     q=[0,0,0,0]
-    q[0] = math.cos(roll/2)*math.cos(pitch/2)
-    q[1] = math.sin(roll/2)*math.cos(pitch/2)
-    q[2] = math.cos(roll/2)*math.sin(pitch/2)
-    q[3] =-math.sin(roll/2)*math.sin(pitch/2)
+    q[0] = math.cos(roll/2)*math.cos(pitch/2)*math.cos(yaw/2)+math.sin(roll/2)*math.sin(pitch/2)*math.sin(yaw/2)
+    q[1] = math.sin(roll/2)*math.cos(pitch/2)*math.cos(yaw/2)-math.cos(roll/2)*math.sin(pitch/2)*math.sin(yaw/2)
+    q[2] = math.cos(roll/2)*math.sin(pitch/2)*math.cos(yaw/2)+math.sin(roll/2)*math.cos(pitch/2)*math.sin(yaw/2)
+    q[3] = math.cos(roll/2)*math.cos(pitch/2)*math.sin(yaw/2)-math.sin(roll/2)*math.sin(pitch/2)*math.cos(yaw/2)
     return q
 
 def to_rad(in_deg):
@@ -167,7 +167,7 @@ while(True):
     img = sensor.snapshot()
     tags = sorted(img.find_apriltags(fx=f_x, fy=f_y, cx=c_x, cy=c_y), key = lambda x: x.w() * x.h(), reverse = True)
     time.sleep(100)
-    thrust = 0.382
+    thrust = 0.182
 
     if(count%200 == 0):
         i=0
@@ -188,9 +188,11 @@ while(True):
     if (i>160):
         desroll = 0
         despitch = 0
-    quatern = rp_to_quat(to_rad(desroll),to_rad(despitch))
+    desyaw = 1
+    quatern = rpy_to_quat(to_rad(desroll),to_rad(despitch),desyaw)
     send_set_attitude_target_packet(thrust,quatern)
-    #print("des roll, pitch: %.2f %.2f" % (desroll,despitch))
+    print("des roll, pitch, yaw: %.2f %.2f %.2f" % (desroll,despitch,desyaw))
+    print("test working: %d" % test.add(2,4))
     #print(quatern)
    # print("FPS %f" % clock.fps())
     count +=1
