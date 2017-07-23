@@ -1,10 +1,9 @@
 import ustruct
-
-import PID
-import uart_pixracer
-
 import sensor, image, time, mjpeg, math, pyb
 import struct
+
+import uart_pixracer
+import PID
 
 def rpy_to_quat(roll, pitch,yaw):
     q=[0,0,0,0]
@@ -148,6 +147,17 @@ if __name__=="__main__":
     pidz = PID.PID()
     pidpsi = PID.PID()
 
+    latkP = 0.034
+    pidx.setKp(latkP)
+    pidy.setKp(latkP)
+
+    latkD = 0.017
+    pidx.setKd(latkD)
+    pidy.setKd(latkD)
+
+    pidz.setKp(0.04)
+    pidz.setKd(0.02)
+    pidz.setKi(0.02)
     pidz.setPoint(desZ)
 
 
@@ -155,9 +165,10 @@ if __name__=="__main__":
     img_writer = image.ImageWriter("/stream.bin")
     # Red LED on means we are capturing frames.
     red_led = pyb.LED(1)
+    blue_led = pyb.LED(3)
     red_led.on()
     start = pyb.millis()
-    framesToCapture = -100
+    framesToCapture = 100
 
 
     while(True):
@@ -175,6 +186,7 @@ if __name__=="__main__":
             img.draw_rectangle(tag.rect(), color = (255, 0, 0))
             img.draw_cross(tag.cx(), tag.cy(), color = (0, 255, 0))
         if tags:
+            blue_led.on()
             # The delx in pixracer frame is -dely in camera frame.
             # The dely in pixracer frame is delx in camera frame. See July 23rd notes
             delx = -tags[0].y_translation()
@@ -193,16 +205,24 @@ if __name__=="__main__":
             send_set_attitude_target_packet(rec.uart,desthrst,desquat)
 
             print("delx,y,z,psi: %.2f  %.2f  %.2f  %.2f" % (fm_uav[0],fm_uav[1],fm_uav[2],delpsi))
+            print("desroll, pitch, thrust: %.2f  %.2f  %.2f  %.2f" % (to_deg(desroll),to_deg(despitch),desthrst))
+
 
             if(framesToCapture>0):
                 #write stuff
                 clock.tick()
-                image.draw_string(0, 0, "FPS: %.2f rpt %.2f %.2f %.2f"%(clock.fps(),desroll,despitch,desthrst), color = (0xFF, 0x00, 0x00))
+                img.draw_string(0, 0, "FPS: %.2f rpt:"%(clock.fps()), color = (0xFF, 0x00, 0x00))
+                img.draw_string(0,20, "%.2f %.2f %.2f" % (desroll,despitch,desthrst), color = (0xFF, 0x00, 0x00))
+                img.draw_string(0,40, "%.2f %.2f %.2f %.2f" % (delx, dely, roll,pitch), color = (0xFF, 0x00, 0x00))
+                img.draw_string(0,60, "%.2f %.2f %.2f"%(fm_uav[0],fm_uav[1],fm_uav[2]), color = (0xFF, 0x00, 0x00))
+
                 img_writer.add_frame(img)
                 framesToCapture -=1
             elif(framesToCapture==0):
                 img_writer.close()
+                red_led.off()
         else:
+            blue_led.off()
             q = [1,0,0,0]
             print("In the else -213")
             send_set_attitude_target_packet(rec.uart,hoverthrust,q)
