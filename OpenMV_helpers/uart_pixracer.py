@@ -6,7 +6,7 @@ from ubinascii import hexlify
 import sensor, image, time, mjpeg, pyb
 
 baudrate = 921600
-bufSize = 5000
+bufSize = 10000
 
 class RPReceiver:
     def __init__(self,expectedlength=8, stchar = 0x58): #0x58 corresponds to 'X'
@@ -49,7 +49,7 @@ class RPReceiver:
             if self.checkmsg(i):
                 self.decode()
                 return 1
-        print("ERROR: didn't find the message")
+        print("ERROR: didn't find the message, numbytes = %d" % self.numbytes)
         return 0
 
     def decode(self):

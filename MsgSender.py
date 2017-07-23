@@ -1,12 +1,8 @@
-# MAVLink AprilTags Landing Target Script.
-#
-# This script sends out AprilTag detections using the MAVLink protocol to
-# an ArduPilot/PixHawk controller for precision landing using your OpenMV Cam.
-#
-# P4 = TXD
+#MsgSender.py
 
 import image, math, pyb, sensor, struct, time
-import test
+import uart_pixracer
+
 
 # Parameters #################################################################
 M_PI = 3.14159265358979323846
@@ -162,39 +158,19 @@ def send_set_position_target_local_ned_packet(x,y,z,yaw):
 # Main Loop
 count = 0
 clock = time.clock()
+rec = uart_pixracer.RPReceiver()
 while(True):
     clock.tick()
     img = sensor.snapshot()
     tags = sorted(img.find_apriltags(fx=f_x, fy=f_y, cx=c_x, cy=c_y), key = lambda x: x.w() * x.h(), reverse = True)
     time.sleep(100)
-    thrust = 0.182
-
-    if(count%200 == 0):
-        i=0
-    despitch = 0
-    if i<20:
-        desroll = i/2
-    if (i<60 and i>=20):
-        desroll = 10-(i-20)/2
-    if (i<80 and i>=60):
-        desroll = -10+(i-60)/2
-    if (i<100 and i>=80):
-        desroll = 0
-        despitch = (i-80)/2
-    if (i<140 and i>=100):
-        despitch = 10-(i-100)/2
-    if (i<160 and i>=140):
-        despitch = -10+(i-140)/2
-    if (i>160):
-        desroll = 0
-        despitch = 0
-    desyaw = 1
+    rec.sync()
+    [roll,pitch,desyaw] = rec.getrpy()
+    thrust = 0.382
     quatern = rpy_to_quat(to_rad(desroll),to_rad(despitch),desyaw)
     send_set_attitude_target_packet(thrust,quatern)
     print("des roll, pitch, yaw: %.2f %.2f %.2f" % (desroll,despitch,desyaw))
-    print("test working: %d" % test.add(2,4))
     #print(quatern)
    # print("FPS %f" % clock.fps())
     count +=1
-    i+=1
 
