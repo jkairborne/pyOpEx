@@ -6,7 +6,7 @@ from ubinascii import hexlify
 import sensor, image, time, mjpeg, pyb
 
 baudrate = 921600
-bufSize = 10000
+bufSize = 1000
 
 class RPReceiver:
     def __init__(self,expectedlength=8, stchar = 0x58): #0x58 corresponds to 'X'

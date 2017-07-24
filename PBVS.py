@@ -5,6 +5,8 @@ import struct
 import uart_pixracer
 import PID
 
+M_PI = 3.14159265358979323846
+
 def rpy_to_quat(roll, pitch,yaw):
     q=[0,0,0,0]
     q[0] = math.cos(roll/2)*math.cos(pitch/2)*math.cos(yaw/2)+math.sin(roll/2)*math.sin(pitch/2)*math.sin(yaw/2)
@@ -123,11 +125,9 @@ def trsfm_mat(r,p,x,y,z,psi):
     cr = math.cos(r)
     sp = math.sin(p)
     cp = math.cos(p)
-    print("in trsfm_mat-129")
-    print("dz = %.2f" % dz)
-    res[0] = cr*x - sr*z + dx
-    res[1] = -sr*sp*x + cp*y - sp*cr*z + dy
-    res[2] = cp*sr*x+sp*y + cr*cp*z + dz
+    res[0] = cr*x + sr*z + dx
+    res[1] = sr*sp*x + cp*y - sp*cr*z + dy
+    res[2] = -cp*sr*x+sp*y + cr*cp*z + dz
     return res
 
 if __name__=="__main__":
@@ -139,7 +139,6 @@ if __name__=="__main__":
     sensor.set_auto_whitebal(False)
     clock = time.clock()
     hoverthrust = 0.385
-    desZ = -10 #1m in real world.
 
     rec = uart_pixracer.RPReceiver()
     pidx = PID.PID()
@@ -157,7 +156,8 @@ if __name__=="__main__":
 
     pidz.setKp(0.04)
     pidz.setKd(0.02)
-    pidz.setKi(0.02)
+    pidz.setKi(0)
+    desZ = -10 #1m in real world.
     pidz.setPoint(desZ)
 
 
@@ -168,11 +168,10 @@ if __name__=="__main__":
     blue_led = pyb.LED(3)
     red_led.on()
     start = pyb.millis()
-    framesToCapture = 100
+    framesToCapture = 200
 
 
-    while(True):
-        clock.tick()
+    while(framesToCapture>0):
         img = sensor.snapshot()
         rec.sync()
         [roll,pitch,yaw] = rec.getrpy()
@@ -187,42 +186,73 @@ if __name__=="__main__":
             img.draw_cross(tag.cx(), tag.cy(), color = (0, 255, 0))
         if tags:
             blue_led.on()
-            # The delx in pixracer frame is -dely in camera frame.
-            # The dely in pixracer frame is delx in camera frame. See July 23rd notes
-            delx = -tags[0].y_translation()
-            dely = tags[0].x_translation()
+            delx = tags[0].x_translation()
+            dely = tags[0].y_translation()
             delz = tags[0].z_translation()
             delpsi = tags[0].z_rotation()
-            fm_uav = trsfm_mat(roll,pitch,delx,dely,delz,delpsi)
 
-            desroll = pidx.update(fm_uav[0])
-            despitch = pidy.update(fm_uav[1])
-            dthrust = pidz.update(fm_uav[2])
+            fm_uav = trsfm_mat(roll,pitch,delx,dely,delz,delpsi)
+            # The delx in pixracer frame is dely in camera frame.
+            # The dely in pixracer frame is delx in camera frame. See July 23rd notes
+            px4_delx=fm_uav[1]
+            px4_dely=fm_uav[0]
+            px4_delz=fm_uav[2]
+
+            desroll = pidx.update(px4_delx)
+            despitch = pidy.update(px4_dely)
+            dthrust = pidz.update(px4_delz)
 
             desquat = rpy_to_quat(desroll,despitch,yaw)
             desthrst = hoverthrust+dthrust
             #TODO pidpsi
-            send_set_attitude_target_packet(rec.uart,desthrst,desquat)
+            #send_set_attitude_target_packet(rec.uart,desthrst,desquat)
 
-            print("delx,y,z,psi: %.2f  %.2f  %.2f  %.2f" % (fm_uav[0],fm_uav[1],fm_uav[2],delpsi))
-            print("desroll, pitch, thrust: %.2f  %.2f  %.2f  %.2f" % (to_deg(desroll),to_deg(despitch),desthrst))
+            print("roll, pitch: %.2f  %.2f" % (roll, pitch))
+            print("delx,y,z,psi: %.2f  %.2f  %.2f" % (delx,dely,delz))
+            print("corrected: %.2f  %.2f  %.2f" % (fm_uav[0],fm_uav[1],fm_uav[2]))
+         #   print("desroll, pitch, thrust: %.2f  %.2f  %.2f" % (to_deg(desroll),to_deg(despitch),desthrst))
 
 
             if(framesToCapture>0):
-                #write stuff
-                clock.tick()
-                img.draw_string(0, 0, "FPS: %.2f rpt:"%(clock.fps()), color = (0xFF, 0x00, 0x00))
-                img.draw_string(0,20, "%.2f %.2f %.2f" % (desroll,despitch,desthrst), color = (0xFF, 0x00, 0x00))
-                img.draw_string(0,40, "%.2f %.2f %.2f %.2f" % (delx, dely, roll,pitch), color = (0xFF, 0x00, 0x00))
-                img.draw_string(0,60, "%.2f %.2f %.2f"%(fm_uav[0],fm_uav[1],fm_uav[2]), color = (0xFF, 0x00, 0x00))
 
-                img_writer.add_frame(img)
+#write stuff
+
+                clock.tick()
+                img.draw_string(0,00, "d: %.2f %.2f %.2f" % (delx, dely, delz), color = (0xFF, 0x00, 0x00))
+                img.draw_string(0,20, "r, p: %.2f %.2f" % (roll,pitch), color = (0xFF, 0x00, 0x00))
+                img.draw_string(0,40, "%.2f %.2f %.2f"%(fm_uav[0],fm_uav[1],fm_uav[2]), color = (0xFF, 0x00, 0x00))
+            #    img.draw_string(0,60, "%.2f %.2f %.2f" % (desroll,despitch,desthrst), color = (0xFF, 0x00, 0x00))
+             #   img.draw_string(0,80, "FPS: %.2f rpt:"%(clock.fps()), color = (0xFF, 0x00, 0x00))
+                '''
+                x = tags[0].x_translation()
+                y = tags[0].y_translation()
+                z = tags[0].z_translation()
+                xrot = tags[0].x_rotation()
+                yrot = tags[0].y_rotation()
+                zrot = tags[0].z_rotation()
+
+                img.draw_string(0,00, "x,    y,     z", color = (0xFF, 0x00, 0x00))
+                img.draw_string(0,20, "%.2f %.2f %.2f" % (x,y,z), color = (0xFF, 0x00, 0x00))
+                img.draw_string(0,40, "xrot, yrot,  zrot", color = (0xFF, 0x00, 0x00))
+                img.draw_string(0,60, "%.2f %.2f %.2f" % (xrot,yrot,zrot), color = (0xFF, 0x00, 0x00))
+                '''
+                #img_writer.add_frame(img)
+                time.sleep(200)
                 framesToCapture -=1
-            elif(framesToCapture==0):
-                img_writer.close()
-                red_led.off()
         else:
             blue_led.off()
+            pidx.setDerivator(0)
+            pidy.setDerivator(0)
+            pidz.setDerivator(0)
+
+            pidx.setIntegrator(0)
+            pidy.setIntegrator(0)
+            pidz.setIntegrator(0)
+
             q = [1,0,0,0]
-            print("In the else -213")
-            send_set_attitude_target_packet(rec.uart,hoverthrust,q)
+          #  print("In the else -213")
+          #  send_set_attitude_target_packet(rec.uart,hoverthrust,q)
+    img_writer.close()
+    print("done recording\n\n\n")
+    red_led.off()
+    blue_led.off()
