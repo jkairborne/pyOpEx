@@ -175,6 +175,8 @@ if __name__=="__main__":
         img = sensor.snapshot()
         rec.sync()
         [roll,pitch,yaw] = rec.getrpy()
+#        print("in while")
+#        print(roll)
 
         tags = sorted(img.find_apriltags(), key = lambda x: x.w() * x.h(), reverse = True)
         #lambda is just an undeclared function. In this case it means the key is x.w()*x.h(), and we reverse the sort
@@ -193,37 +195,30 @@ if __name__=="__main__":
 
             fm_uav = trsfm_mat(roll,pitch,delx,dely,delz,delpsi)
             # The delx in pixracer frame is dely in camera frame.
-            # The dely in pixracer frame is delx in camera frame. See July 23rd notes
-            px4_delx=fm_uav[1]
-            px4_dely=fm_uav[0]
-            px4_delz=fm_uav[2]
-
-            desroll = pidx.update(px4_delx)
-            despitch = pidy.update(px4_dely)
-            dthrust = pidz.update(px4_delz)
+            # The dely in pixracer frame is delx in camera frame. See July 23rd/24th notes
+            desroll = -pidx.update(fm_uav[0])
+            despitch = -pidy.update(fm_uav[1])
+            dthrust = pidz.update(fm_uav[2])
 
             desquat = rpy_to_quat(desroll,despitch,yaw)
             desthrst = hoverthrust+dthrust
             #TODO pidpsi
-            #send_set_attitude_target_packet(rec.uart,desthrst,desquat)
+            send_set_attitude_target_packet(rec.uart,desthrst,desquat)
 
-            print("roll, pitch: %.2f  %.2f" % (roll, pitch))
-            print("delx,y,z,psi: %.2f  %.2f  %.2f" % (delx,dely,delz))
-            print("corrected: %.2f  %.2f  %.2f" % (fm_uav[0],fm_uav[1],fm_uav[2]))
-         #   print("desroll, pitch, thrust: %.2f  %.2f  %.2f" % (to_deg(desroll),to_deg(despitch),desthrst))
+          #  print("roll, pitch: %.2f  %.2f" % (roll, pitch))
+          #  print("delx,y,z,psi: %.2f  %.2f  %.2f" % (delx,dely,delz))
+          #  print("corrected: %.2f  %.2f  %.2f" % (fm_uav[0],fm_uav[1],fm_uav[2]))
+          #  print("desroll, pitch, thrust: %.2f  %.2f  %.2f" % (to_deg(desroll),to_deg(despitch),desthrst))
 
 
             if(framesToCapture>0):
-
-#write stuff
-
                 clock.tick()
                 img.draw_string(0,00, "d: %.2f %.2f %.2f" % (delx, dely, delz), color = (0xFF, 0x00, 0x00))
                 img.draw_string(0,20, "r, p: %.2f %.2f" % (roll,pitch), color = (0xFF, 0x00, 0x00))
                 img.draw_string(0,40, "%.2f %.2f %.2f"%(fm_uav[0],fm_uav[1],fm_uav[2]), color = (0xFF, 0x00, 0x00))
-            #    img.draw_string(0,60, "%.2f %.2f %.2f" % (desroll,despitch,desthrst), color = (0xFF, 0x00, 0x00))
+                img.draw_string(0,60, "%.2f %.2f %.2f" % (desroll,despitch,desthrst), color = (0xFF, 0x00, 0x00))
              #   img.draw_string(0,80, "FPS: %.2f rpt:"%(clock.fps()), color = (0xFF, 0x00, 0x00))
-                '''
+
                 x = tags[0].x_translation()
                 y = tags[0].y_translation()
                 z = tags[0].z_translation()
@@ -231,13 +226,12 @@ if __name__=="__main__":
                 yrot = tags[0].y_rotation()
                 zrot = tags[0].z_rotation()
 
-                img.draw_string(0,00, "x,    y,     z", color = (0xFF, 0x00, 0x00))
-                img.draw_string(0,20, "%.2f %.2f %.2f" % (x,y,z), color = (0xFF, 0x00, 0x00))
-                img.draw_string(0,40, "xrot, yrot,  zrot", color = (0xFF, 0x00, 0x00))
-                img.draw_string(0,60, "%.2f %.2f %.2f" % (xrot,yrot,zrot), color = (0xFF, 0x00, 0x00))
-                '''
-                #img_writer.add_frame(img)
-                time.sleep(200)
+             #   img.draw_string(0,00, "x,    y,     z", color = (0xFF, 0x00, 0x00))
+             #   img.draw_string(0,20, "%.2f %.2f %.2f" % (x,y,z), color = (0xFF, 0x00, 0x00))
+             #   img.draw_string(0,40, "xrot, yrot,  zrot", color = (0xFF, 0x00, 0x00))
+             #   img.draw_string(0,60, "%.2f %.2f %.2f" % (xrot,yrot,zrot), color = (0xFF, 0x00, 0x00))
+
+                img_writer.add_frame(img)
                 framesToCapture -=1
         else:
             blue_led.off()
@@ -251,7 +245,7 @@ if __name__=="__main__":
 
             q = [1,0,0,0]
           #  print("In the else -213")
-          #  send_set_attitude_target_packet(rec.uart,hoverthrust,q)
+            send_set_attitude_target_packet(rec.uart,hoverthrust,q)
     img_writer.close()
     print("done recording\n\n\n")
     red_led.off()

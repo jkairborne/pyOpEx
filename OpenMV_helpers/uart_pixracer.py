@@ -36,7 +36,7 @@ class RPReceiver:
 
     def checkmsg(self,i):
         if (self.buf[i] == self.startbyte):
-    # Potential message should not contain the header (hence the i+1). It should include checksum (hence the 5).
+    # Potential message should not contain the header (hence the i+1). It should include checksum.
             self.potmsg = self.buf[i+1:i+self.xlength]
             if (verify_checksum(self.potmsg)):
                 return True
@@ -50,6 +50,8 @@ class RPReceiver:
                 self.decode()
                 return 1
         print("ERROR: didn't find the message, numbytes = %d" % self.numbytes)
+        for i in range(0,len(self.buf)):
+        	print(self.buf[i])
         return 0
 
     def decode(self):
@@ -68,7 +70,7 @@ def verify_checksum(data):
     else:
         print("checksum failed!")
         return False
-
+'''
 if __name__=="__main__":
     sensor.reset()
     sensor.set_pixformat(sensor.RGB565)
@@ -83,3 +85,4 @@ if __name__=="__main__":
         [tst,tst1,tst2] = rec.getrpy()
         time.sleep(100)
         print("roll and pitch and yaw:  %f   %f  %f " % (tst,tst1,tst2))
+'''
