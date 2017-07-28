@@ -104,6 +104,15 @@ tag_families |= image.TAG36H11 # comment out to disable this family (default fam
 # rate for the 4x4 tag is much, much, much, higher than the 6x6 tag. So, unless you have a
 # reason to use the other tags families just use TAG36H11 which is the default family.
 
+def sat_fct(inp,sat):
+    if (inp > sat):
+        return sat
+    elif (inp < -sat):
+        return -sat
+    else:
+        return inp
+
+
 def family_name(tag):
     if(tag.family() == image.TAG16H5):
         return "TAG16H5"
@@ -146,37 +155,38 @@ if __name__=="__main__":
     pidz = PID.PID()
     pidpsi = PID.PID()
 
-    latkP = 0.034
+#    latkP = 0.034
+#    latkP = 0.017
+    latkP = 0.010
     pidx.setKp(latkP)
     pidy.setKp(latkP)
 
-    latkD = 0.017
+#    latkD = 0.017
+    latkD = 0.005
     pidx.setKd(latkD)
     pidy.setKd(latkD)
 
-    pidz.setKp(0.04)
-    pidz.setKd(0.02)
-    pidz.setKi(0)
+    pidz.setKp(0.02)
+    pidz.setKd(0.01)
     desZ = -10 #1m in real world.
     pidz.setPoint(desZ)
 
 
     #imagewriter stuff
     img_writer = image.ImageWriter("/stream.bin")
+    #m = mjpeg.Mjpeg("PBVS2.mjpeg")
     # Red LED on means we are capturing frames.
     red_led = pyb.LED(1)
     blue_led = pyb.LED(3)
     red_led.on()
     start = pyb.millis()
-    framesToCapture = 200
+    framesToCapture = 300
 
 
     while(framesToCapture>0):
         img = sensor.snapshot()
         rec.sync()
         [roll,pitch,yaw] = rec.getrpy()
-#        print("in while")
-#        print(roll)
 
         tags = sorted(img.find_apriltags(), key = lambda x: x.w() * x.h(), reverse = True)
         #lambda is just an undeclared function. In this case it means the key is x.w()*x.h(), and we reverse the sort
@@ -196,9 +206,9 @@ if __name__=="__main__":
             fm_uav = trsfm_mat(roll,pitch,delx,dely,delz,delpsi)
             # The delx in pixracer frame is dely in camera frame.
             # The dely in pixracer frame is delx in camera frame. See July 23rd/24th notes
-            desroll = -pidx.update(fm_uav[0])
-            despitch = -pidy.update(fm_uav[1])
-            dthrust = pidz.update(fm_uav[2])
+            desroll = sat_fct(-pidx.update(fm_uav[0]),0.17)
+            despitch = sat_fct(pidy.update(fm_uav[1]),0.17)
+            dthrust = sat_fct(-pidz.update(fm_uav[2]),0.20)
 
             desquat = rpy_to_quat(desroll,despitch,yaw)
             desthrst = hoverthrust+dthrust
@@ -216,8 +226,8 @@ if __name__=="__main__":
                 img.draw_string(0,00, "d: %.2f %.2f %.2f" % (delx, dely, delz), color = (0xFF, 0x00, 0x00))
                 img.draw_string(0,20, "r, p: %.2f %.2f" % (roll,pitch), color = (0xFF, 0x00, 0x00))
                 img.draw_string(0,40, "%.2f %.2f %.2f"%(fm_uav[0],fm_uav[1],fm_uav[2]), color = (0xFF, 0x00, 0x00))
-                img.draw_string(0,60, "%.2f %.2f %.2f" % (desroll,despitch,desthrst), color = (0xFF, 0x00, 0x00))
-             #   img.draw_string(0,80, "FPS: %.2f rpt:"%(clock.fps()), color = (0xFF, 0x00, 0x00))
+                img.draw_string(0,60, "%.2f %.2f %.2f" % (desroll,despitch,dthrust), color = (0xFF, 0x00, 0x00))
+                #img.draw_string(0,80, "thr: %.3f %.3f" %(dthrust,desthrst), color = (0xFF, 0x00, 0x00))
 
                 x = tags[0].x_translation()
                 y = tags[0].y_translation()
@@ -230,11 +240,14 @@ if __name__=="__main__":
              #   img.draw_string(0,20, "%.2f %.2f %.2f" % (x,y,z), color = (0xFF, 0x00, 0x00))
              #   img.draw_string(0,40, "xrot, yrot,  zrot", color = (0xFF, 0x00, 0x00))
              #   img.draw_string(0,60, "%.2f %.2f %.2f" % (xrot,yrot,zrot), color = (0xFF, 0x00, 0x00))
-
                 img_writer.add_frame(img)
+#                m.add_frame(img)
                 framesToCapture -=1
         else:
             blue_led.off()
+            #m.add_frame(sensor.snapshot())
+            img_writer.add_frame(img)
+            framesToCapture -=1
             pidx.setDerivator(0)
             pidy.setDerivator(0)
             pidz.setDerivator(0)
@@ -247,6 +260,7 @@ if __name__=="__main__":
           #  print("In the else -213")
             send_set_attitude_target_packet(rec.uart,hoverthrust,q)
     img_writer.close()
+#    m.close(7)
     print("done recording\n\n\n")
     red_led.off()
     blue_led.off()
