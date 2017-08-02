@@ -4,6 +4,7 @@ import struct
 
 import uart_pixracer
 import PID
+import os
 
 M_PI = 3.14159265358979323846
 
@@ -140,6 +141,7 @@ def trsfm_mat(r,p,x,y,z,psi):
     return res
 
 if __name__=="__main__":
+    f = open('log.txt','w')
     sensor.reset()
     sensor.set_pixformat(sensor.RGB565)
     sensor.set_framesize(sensor.QQVGA) # we run out of memory if the resolution is much bigger...
@@ -147,7 +149,7 @@ if __name__=="__main__":
     sensor.set_auto_gain(False)  # must turn this off to prevent image washout...
     sensor.set_auto_whitebal(False)
     clock = time.clock()
-    hoverthrust = 0.385
+    hoverthrust = 0.200#0.375
 
     rec = uart_pixracer.RPReceiver()
     pidx = PID.PID()
@@ -157,36 +159,40 @@ if __name__=="__main__":
 
 #    latkP = 0.034
 #    latkP = 0.017
-    latkP = 0.010
+    latkP = 0.02#0.005
     pidx.setKp(latkP)
     pidy.setKp(latkP)
 
 #    latkD = 0.017
-    latkD = 0.005
+    latkD = 0# 0.0025
     pidx.setKd(latkD)
     pidy.setKd(latkD)
 
-    pidz.setKp(0.02)
+    pidz.setKp(0.04)
     pidz.setKd(0.01)
     desZ = -10 #1m in real world.
     pidz.setPoint(desZ)
 
 
     #imagewriter stuff
-    img_writer = image.ImageWriter("/stream.bin")
-    #m = mjpeg.Mjpeg("PBVS2.mjpeg")
+    #img_writer = image.ImageWriter("/stream.bin")
+    m = mjpeg.Mjpeg("PBVS8.mjpeg")
     # Red LED on means we are capturing frames.
     red_led = pyb.LED(1)
     blue_led = pyb.LED(3)
     red_led.on()
+    pyb.delay(4000)
     start = pyb.millis()
-    framesToCapture = 300
+    framesToCapture =2 # 500
+
+    yawSet = False
 
 
     while(framesToCapture>0):
         img = sensor.snapshot()
         rec.sync()
         [roll,pitch,yaw] = rec.getrpy()
+        f.write('here in the thing\n')
 
         tags = sorted(img.find_apriltags(), key = lambda x: x.w() * x.h(), reverse = True)
         #lambda is just an undeclared function. In this case it means the key is x.w()*x.h(), and we reverse the sort
@@ -206,11 +212,14 @@ if __name__=="__main__":
             fm_uav = trsfm_mat(roll,pitch,delx,dely,delz,delpsi)
             # The delx in pixracer frame is dely in camera frame.
             # The dely in pixracer frame is delx in camera frame. See July 23rd/24th notes
-            desroll = sat_fct(-pidx.update(fm_uav[0]),0.17)
-            despitch = sat_fct(pidy.update(fm_uav[1]),0.17)
+            desroll = sat_fct(-pidx.update(fm_uav[0]),0.5)
+            despitch = sat_fct(pidy.update(fm_uav[1]),0.5)
             dthrust = sat_fct(-pidz.update(fm_uav[2]),0.20)
+            if not yawSet:
+                desyaw = yaw
+                yawSet = True
 
-            desquat = rpy_to_quat(desroll,despitch,yaw)
+            desquat = rpy_to_quat(desroll,despitch,desyaw)
             desthrst = hoverthrust+dthrust
             #TODO pidpsi
             send_set_attitude_target_packet(rec.uart,desthrst,desquat)
@@ -227,6 +236,7 @@ if __name__=="__main__":
                 img.draw_string(0,20, "r, p: %.2f %.2f" % (roll,pitch), color = (0xFF, 0x00, 0x00))
                 img.draw_string(0,40, "%.2f %.2f %.2f"%(fm_uav[0],fm_uav[1],fm_uav[2]), color = (0xFF, 0x00, 0x00))
                 img.draw_string(0,60, "%.2f %.2f %.2f" % (desroll,despitch,dthrust), color = (0xFF, 0x00, 0x00))
+                img.draw_string(0,80, "y %.1f %.1f" % (to_deg(yaw), to_deg(desyaw)), color = (0xFF, 0x00, 0x00))
                 #img.draw_string(0,80, "thr: %.3f %.3f" %(dthrust,desthrst), color = (0xFF, 0x00, 0x00))
 
                 x = tags[0].x_translation()
@@ -240,13 +250,15 @@ if __name__=="__main__":
              #   img.draw_string(0,20, "%.2f %.2f %.2f" % (x,y,z), color = (0xFF, 0x00, 0x00))
              #   img.draw_string(0,40, "xrot, yrot,  zrot", color = (0xFF, 0x00, 0x00))
              #   img.draw_string(0,60, "%.2f %.2f %.2f" % (xrot,yrot,zrot), color = (0xFF, 0x00, 0x00))
-                img_writer.add_frame(img)
-#                m.add_frame(img)
+                #img_writer.add_frame(img)
+                m.add_frame(img)
                 framesToCapture -=1
         else:
+            yawSet = False
             blue_led.off()
-            #m.add_frame(sensor.snapshot())
-            img_writer.add_frame(img)
+            print("Yaw: %.2f" % to_deg(yaw))
+            m.add_frame(img)
+            #img_writer.add_frame(img)
             framesToCapture -=1
             pidx.setDerivator(0)
             pidy.setDerivator(0)
@@ -259,8 +271,9 @@ if __name__=="__main__":
             q = [1,0,0,0]
           #  print("In the else -213")
             send_set_attitude_target_packet(rec.uart,hoverthrust,q)
-    img_writer.close()
-#    m.close(7)
+    #img_writer.close()
+    m.close(7)
+    f.close()
     print("done recording\n\n\n")
     red_led.off()
     blue_led.off()

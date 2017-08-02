@@ -167,6 +167,8 @@ while(True):
     rec.sync()
     [roll,pitch,desyaw] = rec.getrpy()
     thrust = 0.382
+    desroll=0
+    despitch=0
     quatern = rpy_to_quat(to_rad(desroll),to_rad(despitch),desyaw)
     send_set_attitude_target_packet(thrust,quatern)
     print("des roll, pitch, yaw: %.2f %.2f %.2f" % (desroll,despitch,desyaw))
