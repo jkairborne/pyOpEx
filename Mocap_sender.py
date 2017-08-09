@@ -34,7 +34,7 @@ def send_att_pos_mocap_packet(uart,quat,x,y,z):
                        z)
     temp = struct.pack("<bbbbb36s",
                        36,
-                       packet_sequence & 0xFF,
+                       0 & 0xFF,#packet_sequence & 0xFF,
                        MAV_system_id,
                        MAV_component_id,
                        MAV_MOCAP_message_id,
@@ -44,6 +44,9 @@ def send_att_pos_mocap_packet(uart,quat,x,y,z):
                        temp,
                        checksum(temp, MAV_MOCAP_extra_crc))
     packet_sequence += 1
+    print("\n\nPacket to be sent:")
+    for i in range(len(temp)):
+        print(temp[i])
     uart.write(temp)
 
 
@@ -94,7 +97,7 @@ while(True):
     clock.tick()
     time.sleep(100)
     send_att_pos_mocap_packet(uart,[1,0,0,0],11,22,33)
-    send_set_position_target_local_ned_packet(uart,-10,-20,-30,1.2)
-    print("in loop")
+   # send_set_position_target_local_ned_packet(uart,-10,-20,-30,1.2)
+   # print("in loop")
    # print("FPS %f" % clock.fps())
     count +=1

@@ -176,7 +176,7 @@ if __name__=="__main__":
 
     #imagewriter stuff
     #img_writer = image.ImageWriter("/stream.bin")
-    m = mjpeg.Mjpeg("PBVS8.mjpeg")
+    #m = mjpeg.Mjpeg("PBVS8.mjpeg")
     # Red LED on means we are capturing frames.
     red_led = pyb.LED(1)
     blue_led = pyb.LED(3)
@@ -251,13 +251,13 @@ if __name__=="__main__":
              #   img.draw_string(0,40, "xrot, yrot,  zrot", color = (0xFF, 0x00, 0x00))
              #   img.draw_string(0,60, "%.2f %.2f %.2f" % (xrot,yrot,zrot), color = (0xFF, 0x00, 0x00))
                 #img_writer.add_frame(img)
-                m.add_frame(img)
+                #m.add_frame(img)
                 framesToCapture -=1
         else:
             yawSet = False
             blue_led.off()
             print("Yaw: %.2f" % to_deg(yaw))
-            m.add_frame(img)
+           # m.add_frame(img)
             #img_writer.add_frame(img)
             framesToCapture -=1
             pidx.setDerivator(0)
@@ -272,8 +272,8 @@ if __name__=="__main__":
           #  print("In the else -213")
             send_set_attitude_target_packet(rec.uart,hoverthrust,q)
     #img_writer.close()
-    m.close(7)
-    f.close()
+   # m.close(7)
+   # f.close()
     print("done recording\n\n\n")
     red_led.off()
     blue_led.off()
