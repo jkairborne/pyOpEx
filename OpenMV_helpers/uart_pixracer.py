@@ -5,7 +5,7 @@ from ubinascii import hexlify
 
 import sensor, image, time, mjpeg, pyb
 
-baudrate = 921600
+baudrate = 57600
 bufSize = 1000
 
 class RPReceiver:
@@ -51,7 +51,7 @@ class RPReceiver:
                 return 1
         print("ERROR: didn't find the message, numbytes = %d" % self.numbytes)
         for i in range(0,len(self.buf)):
-        	print(self.buf[i])
+                print(self.buf[i])
         return 0
 
     def decode(self):

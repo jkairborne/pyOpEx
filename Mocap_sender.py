@@ -90,7 +90,7 @@ def send_set_position_target_local_ned_packet(uart,x,y,z,yaw):
 count = 0
 clock = time.clock()
 
-uart_baudrate = 921600
+uart_baudrate = 57600
 uart = pyb.UART(3, uart_baudrate, timeout_char = 1000)
 
 while(True):

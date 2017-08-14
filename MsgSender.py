@@ -6,7 +6,7 @@ import uart_pixracer
 
 # Parameters #################################################################
 M_PI = 3.14159265358979323846
-uart_baudrate = 921600
+uart_baudrate = 57600
 
 MAV_system_id = 1
 MAV_component_id = 0x54
@@ -171,8 +171,9 @@ while(True):
     despitch=0
     quatern = rpy_to_quat(to_rad(desroll),to_rad(despitch),desyaw)
     send_set_attitude_target_packet(thrust,quatern)
+    send_set_position_target_local_ned_packet(0,0,1,0)
     print("des roll, pitch, yaw: %.2f %.2f %.2f" % (desroll,despitch,desyaw))
     #print(quatern)
-   # print("FPS %f" % clock.fps())
+    print("FPS %f" % clock.fps())
     count +=1
 

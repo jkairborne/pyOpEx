@@ -183,16 +183,19 @@ if __name__=="__main__":
     red_led.on()
     pyb.delay(4000)
     start = pyb.millis()
-    framesToCapture =2 # 500
+    framesToCapture =500 # 500
 
     yawSet = False
 
 
     while(framesToCapture>0):
         img = sensor.snapshot()
-        rec.sync()
-        [roll,pitch,yaw] = rec.getrpy()
-        f.write('here in the thing\n')
+       # rec.sync()
+        #[roll,pitch,yaw] = rec.getrpy()
+        roll=0
+        pitch=0
+        yaw=0
+#        f.write('here in the thing\n')
 
         tags = sorted(img.find_apriltags(), key = lambda x: x.w() * x.h(), reverse = True)
         #lambda is just an undeclared function. In this case it means the key is x.w()*x.h(), and we reverse the sort
@@ -252,7 +255,7 @@ if __name__=="__main__":
              #   img.draw_string(0,60, "%.2f %.2f %.2f" % (xrot,yrot,zrot), color = (0xFF, 0x00, 0x00))
                 #img_writer.add_frame(img)
                 #m.add_frame(img)
-                framesToCapture -=1
+                framesToCapture +=1
         else:
             yawSet = False
             blue_led.off()
