@@ -15,7 +15,7 @@ from argparse import ArgumentParser
 parser = ArgumentParser(description=__doc__)
 
 parser.add_argument("--baudrate", type=int,
-                  help="master port baud rate", default=115200)
+                  help="master port baud rate", default=57600)
 parser.add_argument("--device", required=True, help="serial device", default="/dev/ttyACM0")
 args = parser.parse_args()
 
@@ -30,7 +30,7 @@ counts = {}
 
 class PositionController(object):
     def __init__(self):
-        self.model_name = 'Trackable1'
+        self.model_name = 'Track1'
         self.master = mavutil.mavlink_connection(args.device, baud=args.baudrate)
 
         # Containers
@@ -49,8 +49,8 @@ class PositionController(object):
     def desired(self):
         # Actual position and orientation
         self.x = self.optitrack_data.pose.position.x
-        self.y = -self.optitrack_data.pose.position.z
-        self.z = self.optitrack_data.pose.position.y
+        self.y = self.optitrack_data.pose.position.z
+        self.z = -self.optitrack_data.pose.position.y
         quaternion = (self.optitrack_data.pose.orientation.x,-self.optitrack_data.pose.orientation.z,self.optitrack_data.pose.orientation.y,self.optitrack_data.pose.orientation.w)
         (self.phi,self.theta,self.psi) = euler_from_quaternion(quaternion)
         print("x: %.2f, y: %.2f, z: %.2f, roll: %f, pitch:  %f, yaw:  %f" %(self.x, self.y, self.z,self.phi,self.theta,self.psi) )
