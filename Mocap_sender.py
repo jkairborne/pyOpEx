@@ -90,14 +90,14 @@ def send_set_position_target_local_ned_packet(uart,x,y,z,yaw):
 count = 0
 clock = time.clock()
 
-uart_baudrate = 921600
+uart_baudrate = 57600
 uart = pyb.UART(3, uart_baudrate, timeout_char = 1000)
 
 while(True):
     clock.tick()
     time.sleep(100)
     send_att_pos_mocap_packet(uart,[1,0,0,0],11,22,33)
-   # send_set_position_target_local_ned_packet(uart,-10,-20,-30,1.2)
+    send_set_position_target_local_ned_packet(uart,-10,-20,-30,1.2)
    # print("in loop")
    # print("FPS %f" % clock.fps())
     count +=1
