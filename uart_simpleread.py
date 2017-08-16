@@ -5,7 +5,7 @@
 # on the serial LCD display.
 
 import time
-from pyb import UART
+import pyb
 
 # Always pass UART 3 for the UART number for your OpenMV Cam.
 # The second argument is the UART baud rate. For a more advanced UART control
