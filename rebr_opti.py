@@ -53,7 +53,8 @@ class PositionController(object):
         self.z = -self.optitrack_data.pose.position.y
         quaternion = (self.optitrack_data.pose.orientation.x,-self.optitrack_data.pose.orientation.z,self.optitrack_data.pose.orientation.y,self.optitrack_data.pose.orientation.w)
         (self.phi,self.theta,self.psi) = euler_from_quaternion(quaternion)
-        print("x: %.2f, y: %.2f, z: %.2f, roll: %f, pitch:  %f, yaw:  %f" %(self.x, self.y, self.z,self.phi,self.theta,self.psi) )
+        #print("x: %.2f, y: %.2f, z: %.2f, roll: %f, pitch:  %f, yaw:  %f" %(self.x, self.y, self.z,self.phi,self.theta,self.psi) )
+        print("x: %.2f, y: %.2f, z: %.2f, q:  %.2f %.2f %.2f %.2f" %(self.x, self.y, self.z,self.optitrack_data.pose.orientation.x,-self.optitrack_data.pose.orientation.z,self.optitrack_data.pose.orientation.y,self.optitrack_data.pose.orientation.w) )
         self.master.mav.att_pos_mocap_send(0, quaternion,self.x,self.y,self.z)
         
         #SEND DATA OVER SERIAL
