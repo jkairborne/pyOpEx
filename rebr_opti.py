@@ -17,6 +17,8 @@ parser = ArgumentParser(description=__doc__)
 parser.add_argument("--baudrate", type=int,
                   help="master port baud rate", default=57600)
 parser.add_argument("--device", required=True, help="serial device", default="/dev/ttyACM0")
+parser.add_argument("--uav", type=str,
+                  help="name of uav according to optitrack", default="racer")
 args = parser.parse_args()
 
 # create a mavlink serial instance
@@ -30,7 +32,7 @@ counts = {}
 
 class PositionController(object):
     def __init__(self):
-        self.model_name = 'Track1'
+        self.model_name = args.uav
         self.master = mavutil.mavlink_connection(args.device, baud=args.baudrate)
 
         # Containers
@@ -51,10 +53,11 @@ class PositionController(object):
         self.x = self.optitrack_data.pose.position.x
         self.y = self.optitrack_data.pose.position.z
         self.z = -self.optitrack_data.pose.position.y
-        quaternion = (self.optitrack_data.pose.orientation.x,-self.optitrack_data.pose.orientation.z,self.optitrack_data.pose.orientation.y,self.optitrack_data.pose.orientation.w)
+        quaternion = (self.optitrack_data.pose.orientation.w,self.optitrack_data.pose.orientation.x,self.optitrack_data.pose.orientation.z,-self.optitrack_data.pose.orientation.y)
+        #quaternion = (self.optitrack_data.pose.orientation.w,self.optitrack_data.pose.orientation.x,-self.optitrack_data.pose.orientation.z,self.optitrack_data.pose.orientation.y)
         (self.phi,self.theta,self.psi) = euler_from_quaternion(quaternion)
         #print("x: %.2f, y: %.2f, z: %.2f, roll: %f, pitch:  %f, yaw:  %f" %(self.x, self.y, self.z,self.phi,self.theta,self.psi) )
-        print("x: %.2f, y: %.2f, z: %.2f, q:  %.2f %.2f %.2f %.2f" %(self.x, self.y, self.z,self.optitrack_data.pose.orientation.x,-self.optitrack_data.pose.orientation.z,self.optitrack_data.pose.orientation.y,self.optitrack_data.pose.orientation.w) )
+        print("x: %.2f, y: %.2f, z: %.2f, q:  %.2f %.2f %.2f %.2f" %(self.x, self.y, self.z,self.optitrack_data.pose.orientation.x,self.optitrack_data.pose.orientation.z,-self.optitrack_data.pose.orientation.y,self.optitrack_data.pose.orientation.w) )
         self.master.mav.att_pos_mocap_send(0, quaternion,self.x,self.y,self.z)
         
         #SEND DATA OVER SERIAL
