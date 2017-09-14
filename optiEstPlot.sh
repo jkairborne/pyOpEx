@@ -2,7 +2,6 @@
 
 gnuplot -persist <<-EOFMarker
     set autoscale
-	set yrange [-0.20:0.20]
 	set datafile separator ","
     set key autotitle columnhead
     set grid
