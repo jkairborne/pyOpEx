@@ -1,0 +1,2 @@
+%time,field.header.seq,field.header.stamp,field.header.frame_id,field.pose.position.x,field.pose.position.y,field.pose.position.z,field.pose.orientation.x,field.pose.orientation.y,field.pose.orientation.z,field.pose.orientation.w
+1505434100288577217,0,1505434100288455411,0.120654903352,0.106560923159,-0.253155857325,-0.126811400056,-0.642905473709,-0.636204183102,0.407229155302
